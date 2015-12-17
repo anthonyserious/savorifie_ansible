@@ -1,0 +1,50 @@
+---
+
+- name: enable epel
+  yum: name=http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm state=present
+  sudo: yes
+
+- name: install packages
+  yum: name={{ item }} state=present enablerepo=epel
+  with_items:
+    - git
+    - python-devel
+    - python-pip
+    - telnet
+  sudo: yes
+
+- name: Install the gcc and g++ packages
+  yum: name={{ item }} state=latest
+  sudo: yes
+  with_items:
+    - gcc
+    - gcc-c++
+
+
+- name: create application user
+  user: name={{app_user}}
+  sudo: yes
+
+- name: ensure deploy user has access to app user group
+  user: name={{deploy_user}} groups={{deploy_user}},{{app_user}}
+  sudo: yes
+
+- name: make app home directory group readable
+  file: path=/home/{{app_user}} mode=u+rwx,g+rwx recurse=yes
+  sudo: yes
+
+- name: create .ssh directory
+  file: dest=/home/{{app_user}}/.ssh state=directory owner={{app_user}} group={{app_user}}
+  sudo: yes
+
+- name: copy deploy key
+  copy: src=id_rsa.opendeploy dest=/home/{{app_user}}/.ssh/id_rsa.opendeploy owner={{app_user}} group={{app_user}} mode=400
+  sudo: yes
+
+- name: copy ssh config 
+  copy: src=ssh_config dest=/home/{{app_user}}/.ssh/config owner={{app_user}} group={{app_user}} mode=400
+  sudo: yes
+
+- name: create /var/log/savorifie directory
+  file: dest=/var/log/savorifie state=directory owner={{app_user}} group={{app_user}}
+  sudo: yes

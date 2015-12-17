@@ -1,0 +1,17 @@
+[Unit]
+Description=financifie
+
+[Service]
+Type=simple
+ExecStart={{ start_script }}
+WorkingDirectory={{ project_path }}
+
+User={{app_user}}
+Group={{app_user}}
+
+EnvironmentFile=-/etc/sysconfig/financifie
+
+StandardInput=null
+StandardOutput=syslog
+StandardError=syslog
+Restart=always

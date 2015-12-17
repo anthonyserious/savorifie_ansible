@@ -1,0 +1,55 @@
+---
+# This role deploys the mongod processes
+
+- name: Create the mongodb repository
+  sudo: yes
+  copy: src=mongodb-org-3.0.repo dest=/etc/yum.repos.d/mongodb-org-3.0.repo
+
+- name: Install the mongodb package
+  yum: name={{ item }} state=latest
+  sudo: yes
+  with_items:
+   - mongodb-org
+   - python-devel
+   - python-pip
+  
+- name: install pymongo
+  sudo: yes
+  pip: name=pymongo state=latest
+
+- name: Create the data directory for mongodb
+  sudo: yes
+  file: path={{ mongodb_datadir_prefix }} owner=mongod group=mongod state=directory
+
+- name: Copy the keyfile for authentication
+  sudo: yes
+  copy: src=secret dest={{ mongodb_datadir_prefix }}/secret owner=mongod group=mongod mode=0600
+
+- name: Create the mongodb configuration file
+  sudo: yes
+  template: src=mongod.conf.j2 dest=/etc/mongod.conf
+  notify:
+    - restart mongod
+
+- name: Start the mongodb service
+  sudo: yes
+  service: name=mongod state=started enabled=yes
+
+- name: Wait for mongo to come online 
+  wait_for: port="27017" timeout=10
+
+- name: Create the admin user
+  sudo: yes
+  mongodb_user: database=admin name=admin password={{ root_mongodb_password }} roles=root
+  run_once: true
+
+- name: Create the monitor user
+  sudo: yes
+  mongodb_user: login_user=admin login_password={{ root_mongodb_password }} database=admin name=mongomon password={{ mongodb_mongomon_password }} roles='clusterMonitor,read' replica_set={{replica_set}}
+  run_once: true
+
+- name: Create the read-only user
+  sudo: yes
+  mongodb_user: login_user=admin login_password={{ root_mongodb_password }} database=admin name=savorifiero password={{ mongodb_savorifiero_password }} roles='readAnyDatabase' replica_set={{replica_set}}
+  run_once: true
+

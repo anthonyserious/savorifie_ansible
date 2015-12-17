@@ -1,0 +1,3 @@
+primary_conninfo = 'host={{ play_hosts[0] }} port=5432 user=replicator password={{postgresql_replicator_password}}'
+trigger_file = '/data/failover'
+standby_mode = 'on'

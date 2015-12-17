@@ -1,0 +1,12 @@
+db.getMongo().getDB('admin').createUser({
+    user: "admin", 
+    pwd: "electron1f1e",
+    roles: [ "root" ]
+});
+{% for db in mongo_databases %}
+db.getMongo().getDB('{{db}}').createUser({
+    user: "DUSC", 
+    pwd: "DUSC",
+    roles: [ "readWrite" ]
+});
+{% endfor %}

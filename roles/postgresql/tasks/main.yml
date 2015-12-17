@@ -1,0 +1,58 @@
+
+---
+# Tasks for installing postgresql
+
+- name: install postgresql dependencies
+  sudo: yes
+  yum: name=python-psycopg2 state=latest
+
+- name: install postgresql packages
+  sudo: yes
+  yum: name={{item}} state=installed
+  with_items:
+    - postgresql-server
+    - postgresql
+
+- name: Setup the postgres systemd file
+  sudo: yes
+  template: src=postgresql.service.j2 dest=/etc/systemd/system/postgresql.service
+
+- name: Reload daemon
+  sudo: yes
+  command: systemctl daemon-reload
+
+- name: ensure data directory permissions
+  sudo: yes
+  file: path=/data state=directory owner=postgres group=postgres
+
+- name: Initiate database
+  sudo: yes
+  command: postgresql-setup initdb creates=/data/postgresql.conf
+
+- name: ensure postgresql is started
+  sudo: yes
+  service: name=postgresql state=started enabled=yes
+
+- name: Create the postgresql config
+  sudo: yes
+  template: src=postgresql.conf.j2 dest=/data/postgresql.conf owner=postgres group=postgres
+  notify: restart postgresql
+
+- name: ensure a postgresql superuser is created
+  sudo: yes
+  sudo_user: postgres
+  postgresql_user: name=root password={{ root_postgresql_password }} role_attr_flags=SUPERUSER 
+  run_once: true
+  #delegate_to: "{{ play_hosts[0] }}"
+
+- name: ensure a replication user is created
+  sudo: yes
+  sudo_user: postgres
+  postgresql_user: name='replicator' password={{ postgresql_replicator_password }} role_attr_flags=REPLICATION,LOGIN
+  run_once: true
+  #delegate_to: "{{ play_hosts[0] }}"
+
+- name: create recovery file
+  sudo: yes
+  template: src=recovery.conf.j2 dest=/data/recovery.conf owner=postgres group=postgres
+  when: inventory_hostname != play_hosts[0]

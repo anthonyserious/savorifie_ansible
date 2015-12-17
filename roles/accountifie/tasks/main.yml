@@ -1,0 +1,117 @@
+---
+# tasks for setting up financifie server
+
+- name: install development tools 
+  sudo: yes 
+  yum: name="@Development tools" state=present enablerepo=epel
+
+- name: install packages
+  sudo: yes 
+  yum: name={{item}} state=present enablerepo=epel
+  with_items:
+    - libjpeg-devel
+    - libxslt-devel
+    - freetype-devel
+    - libpng-devel
+    - libtiff-devel
+    - python-devel
+    - python-setuptools
+    - sqlite-devel
+    - postgresql
+    - postgresql-devel
+    - python-psycopg2
+
+- name: install pip
+  sudo: yes 
+  easy_install: name=pip
+
+- name: install virtualenv
+  sudo: yes 
+  pip: name=virtualenv
+
+- name: install psycopg2
+  sudo: yes 
+  pip: name=psycopg2
+
+- name: clone repos
+  git: repo=git@github.com:imcallister/savorifie.git
+    version={{ deploy_branch }}
+    dest={{ project_path }}
+    accept_hostkey=yes
+    force=yes
+  sudo: yes
+  sudo_user: savorifie
+
+- name: set global execute permissions
+  sudo: yes 
+  file: path=/home/{{app_user}} state=directory mode=0755
+
+- name: Create the virtualenv
+  command: virtualenv {{ project_path }} --no-site-packages creates={{ project_path }}/bin/activate
+  sudo: yes
+  sudo_user: savorifie
+
+- name: install required python libraries
+  pip: requirements={{ project_path }}/requirements.txt virtualenv={{ project_path }} extra_args='-i https://beta:gammadelta@www.reportlab.com/pypi'
+  sudo: yes
+
+- name: create financifie database 
+  mysql_db: name=financifie state=present login_user=root login_password={{ root_mysql_password }}
+
+- name: create financifie user
+  mysql_user: name=financifie password={{ financifie_db_password }} priv=*.*:ALL state=present login_user=root login_password={{ root_mysql_password }}
+
+- name: copy nginx virtual host file
+  sudo: yes 
+  template: src="nginx.j2" 
+    dest="/etc/nginx/sites-available/{{app_name}}" 
+    owner=root 
+    group=root
+
+- name: link nginx virtual host file
+  sudo: yes 
+  file: src="/etc/nginx/sites-available/{{app_name}}" 
+    dest="/etc/nginx/sites-enabled/{{app_name}}" 
+    state=link
+
+- name: export gunicorn server script
+  sudo: yes 
+  template: src=start_gunicorn.sh.j2 dest={{ start_script }} mode=0755
+ 
+- name: export financifie environment file 
+  sudo: yes 
+  template: src=financifie.env.j2 dest=/etc/sysconfig/financifie
+
+- name: export financifie systemd services
+  sudo: yes 
+  template: src=financifie.service.j2 dest=/etc/systemd/system/financifie.service
+
+- name: load nginx
+  sudo: yes 
+  service: name=nginx state=reloaded
+
+- name: Ensure financifie DB is created
+  sudo: yes 
+  postgresql_db: login_host={{ postgresql_db_host }} login_user=root login_password={{root_postgresql_password}} name=financifie
+
+- name: copy postgres pass
+  sudo: yes 
+  template: src=pgpass.j2 dest=~/.pgpass mode=0600
+
+- name: ensure a postgresql application user is created
+  sudo: yes 
+  postgresql_user: login_host={{ postgresql_db_host}} login_user=root login_password={{root_postgresql_password}} name=financifie password={{ financifie_db_password }} db=financifie priv=ALL
+  run_once: true
+
+- name: replace databse settings
+  sudo: yes 
+  lineinfile: dest={{ application_path}}/settings.py insertafter="^# override database variables" line="{{ item }}"
+  with_items:
+    - "DB_PASSWORD = '{{ financifie_db_password }}'"
+    - "DB_USER = 'financifie'"
+
+- name: notify slack
+  local_action: uri url=https://hooks.slack.com/services/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
+         method=POST
+         body="{\"text\":\"{{ lookup('env', 'USER') }} deployed financifie branch {{ deploy_branch }} to [{{ env_name }}] on {{ inventory_hostname }}}"
+         HEADER_Content-Type="application/json"

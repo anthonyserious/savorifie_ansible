@@ -1,0 +1,17 @@
+---
+epel: name=http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm state=present
+
+app_user: savor
+deploy_user: deploy
+
+deploy_branch: master
+
+
+# Disable All Updates
+# By default automatic updates are enabled, set this value to true to disable all automatic updates
+auto_up_disable: false
+
+
+# MongoDB
+mongodb_datadir_prefix: /data
+

@@ -1,0 +1,48 @@
+---
+# deploys the corporate website
+
+# Apply common configuration to all hosts
+- hosts: savorifie-server
+  roles:
+    - deploy
+    - nginx
+    - mongodb
+    - postgresql
+    - accountifie
+  vars:
+    deploy_branch: devel
+    app_name: savor
+    project_path: /home/{{app_user}}/savorifie
+    application_path: "{{project_path}}/{{app_name}}"
+    app_port: 8000
+    app_domain_name: localhost
+    django_settings: savor.settings
+    financifie_svc_url: http://localhost:5125
+    start_script: "{{ project_path }}/bin/start_gunicorn.sh"
+  vars_files:
+    - ../vars/savorifie.yml
+
+  tasks:
+    - name: Run the Django syncdb command
+      sudo: yes
+      django_manage:
+        command: syncdb
+        app_path: '{{ project_path }}'
+        virtualenv: '{{ project_path }}'
+        settings: '{{ django_settings }}'
+      tags: django
+      run_once: true
+
+    - name: Run Django collectstatic
+      django_manage:
+        command: collectstatic
+        app_path: '{{ project_path }}'
+        virtualenv: '{{ project_path }}'
+        settings: '{{ django_settings }}'
+      tags: django
+      sudo: yes
+      sudo_user: savor
+
+    - name: restart savorifie 
+      sudo: yes
+      service: name=savorifie.service state=restarted enabled=true
