@@ -45,12 +45,6 @@
   run_once: true
   #delegate_to: "{{ play_hosts[0] }}"
 
-- name: ensure a replication user is created
-  sudo: yes
-  sudo_user: postgres
-  postgresql_user: name='replicator' password={{ postgresql_replicator_password }} role_attr_flags=REPLICATION,LOGIN
-  run_once: true
-  #delegate_to: "{{ play_hosts[0] }}"
 
 - name: create recovery file
   sudo: yes

@@ -13,5 +13,5 @@ auto_up_disable: false
 
 
 # MongoDB
-mongodb_datadir_prefix: /data
+mongodb_datadir_prefix: /mongodata
 

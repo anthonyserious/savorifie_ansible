@@ -28,8 +28,7 @@
 - name: Create the mongodb configuration file
   sudo: yes
   template: src=mongod.conf.j2 dest=/etc/mongod.conf
-  notify:
-    - restart mongod
+  
 
 - name: Start the mongodb service
   sudo: yes
@@ -45,11 +44,11 @@
 
 - name: Create the monitor user
   sudo: yes
-  mongodb_user: login_user=admin login_password={{ root_mongodb_password }} database=admin name=mongomon password={{ mongodb_mongomon_password }} roles='clusterMonitor,read' replica_set={{replica_set}}
+  mongodb_user: login_user=admin login_password={{ root_mongodb_password }} database=admin name=mongomon password={{ mongodb_mongomon_password }} roles='clusterMonitor,read'
   run_once: true
 
 - name: Create the read-only user
   sudo: yes
-  mongodb_user: login_user=admin login_password={{ root_mongodb_password }} database=admin name=savorifiero password={{ mongodb_savorifiero_password }} roles='readAnyDatabase' replica_set={{replica_set}}
+  mongodb_user: login_user=admin login_password={{ root_mongodb_password }} database=admin name=savorifiero password={{ mongodb_savorifiero_password }} roles='readAnyDatabase'
   run_once: true
 
