@@ -5,19 +5,19 @@ upstream {{ app_name }} {
 
 server {
   listen 80;
-  rewrite ^ https://$server_name$request_uri? permanent;
+#  rewrite ^ https://$server_name$request_uri? permanent;
   server_name {{ app_domain_name }};
-}
-
-server {
-  listen 443;
+#}
+#
+#server {
+#  listen 443;
 
   access_log /var/log/nginx/{{app_name}}.log;
   error_log  /var/log/nginx/{{app_name}}.error.log;
  
-  ssl on;
-  ssl_certificate /etc/pki/tls/certs/savorifie.crt;
-  ssl_certificate_key /etc/pki/tls/private/savorifie.key;
+#  ssl on;
+#  ssl_certificate /etc/pki/tls/certs/savorifie.crt;
+#  ssl_certificate_key /etc/pki/tls/private/savorifie.key;
  
   server_name {{ app_domain_name }};
 

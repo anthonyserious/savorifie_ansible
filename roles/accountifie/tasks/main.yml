@@ -34,13 +34,13 @@
   pip: name=psycopg2
 
 - name: clone repos
-  git: repo=git@github.com:imcallister/savorifie.git
+  git: repo="https://github.com/imcallister/savorifie.git"
     version={{ deploy_branch }}
     dest={{ project_path }}
     accept_hostkey=yes
     force=yes
   sudo: yes
-  sudo_user: savorifie
+  sudo_user: "{{ app_user }}"
 
 - name: set global execute permissions
   sudo: yes 
@@ -49,17 +49,11 @@
 - name: Create the virtualenv
   command: virtualenv {{ project_path }} --no-site-packages creates={{ project_path }}/bin/activate
   sudo: yes
-  sudo_user: savorifie
+  sudo_user: "{{ app_user }}"
 
 - name: install required python libraries
   pip: requirements={{ project_path }}/requirements.txt virtualenv={{ project_path }} extra_args='-i https://beta:gammadelta@www.reportlab.com/pypi'
   sudo: yes
-
-- name: create financifie database 
-  mysql_db: name=financifie state=present login_user=root login_password={{ root_mysql_password }}
-
-- name: create financifie user
-  mysql_user: name=financifie password={{ financifie_db_password }} priv=*.*:ALL state=present login_user=root login_password={{ root_mysql_password }}
 
 - name: copy nginx virtual host file
   sudo: yes 
@@ -92,7 +86,7 @@
 
 - name: Ensure financifie DB is created
   sudo: yes 
-  postgresql_db: login_host={{ postgresql_db_host }} login_user=root login_password={{root_postgresql_password}} name=financifie
+  postgresql_db: login_user=root login_password={{ root_postgresql_password }} name=financifie
 
 - name: copy postgres pass
   sudo: yes 
@@ -100,18 +94,19 @@
 
 - name: ensure a postgresql application user is created
   sudo: yes 
-  postgresql_user: login_host={{ postgresql_db_host}} login_user=root login_password={{root_postgresql_password}} name=financifie password={{ financifie_db_password }} db=financifie priv=ALL
+  postgresql_user: login_user=root login_password={{ root_postgresql_password }} name=financifie password={{ accountifie_db_password }} db=financifie priv=ALL
   run_once: true
 
 - name: replace databse settings
   sudo: yes 
   lineinfile: dest={{ application_path}}/settings.py insertafter="^# override database variables" line="{{ item }}"
   with_items:
-    - "DB_PASSWORD = '{{ financifie_db_password }}'"
+    - "DB_PASSWORD = '{{ accountifie_db_password }}'"
     - "DB_USER = 'financifie'"
 
-- name: notify slack
-  local_action: uri url=https://hooks.slack.com/services/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
-         method=POST
-         body="{\"text\":\"{{ lookup('env', 'USER') }} deployed financifie branch {{ deploy_branch }} to [{{ env_name }}] on {{ inventory_hostname }}}"
-         HEADER_Content-Type="application/json"
+#- name: notify slack
+#  local_action: uri url=https://hooks.slack.com/services/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
+#         method=POST
+#         body="{\"text\":\"{{ lookup('env', 'USER') }} deployed financifie branch {{ deploy_branch }} to [{{ env_name }}] on {{ inventory_hostname }}}"
+#         HEADER_Content-Type="application/json"
+

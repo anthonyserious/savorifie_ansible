@@ -32,6 +32,7 @@
         settings: '{{ django_settings }}'
       tags: django
       run_once: true
+      ignore_errors: yes
 
     - name: Run Django collectstatic
       django_manage:
