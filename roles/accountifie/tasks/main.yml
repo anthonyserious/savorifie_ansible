@@ -104,9 +104,3 @@
     - "DB_PASSWORD = '{{ accountifie_db_password }}'"
     - "DB_USER = 'financifie'"
 
-#- name: notify slack
-#  local_action: uri url=https://hooks.slack.com/services/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
-#         method=POST
-#         body="{\"text\":\"{{ lookup('env', 'USER') }} deployed financifie branch {{ deploy_branch }} to [{{ env_name }}] on {{ inventory_hostname }}}"
-#         HEADER_Content-Type="application/json"
-
